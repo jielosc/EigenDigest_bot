@@ -1,4 +1,4 @@
-"""EigenDigest Bot — main entry point."""
+"""EigenDigest Bot — main entry point (multi-user)."""
 
 import logging
 import sys
@@ -44,7 +44,7 @@ def main():
         setup_scheduler(application)
         logger.info("Scheduler initialized in post_init.")
 
-    # Build Telegram application with post_init hook
+    # Build Telegram application
     app = (
         ApplicationBuilder()
         .token(config.TELEGRAM_BOT_TOKEN)
@@ -52,8 +52,11 @@ def main():
         .build()
     )
 
-    # Register command handlers
+    # Public commands (no auth required)
     app.add_handler(CommandHandler("start", handlers.start_command))
+    app.add_handler(CommandHandler("join", handlers.join_command))
+
+    # User commands (authorized users)
     app.add_handler(CommandHandler("help", handlers.help_command))
     app.add_handler(CommandHandler("add", handlers.add_command))
     app.add_handler(CommandHandler("remove", handlers.remove_command))
@@ -61,12 +64,18 @@ def main():
     app.add_handler(CommandHandler("toggle", handlers.toggle_command))
     app.add_handler(CommandHandler("settime", handlers.settime_command))
     app.add_handler(CommandHandler("digest", handlers.digest_command))
-    # Group management
+
+    # Group management (authorized users)
     app.add_handler(CommandHandler("groups", handlers.groups_command))
     app.add_handler(CommandHandler("presets", handlers.presets_command))
     app.add_handler(CommandHandler("import", handlers.import_command))
     app.add_handler(CommandHandler("delgroup", handlers.delgroup_command))
     app.add_handler(CommandHandler("togglegroup", handlers.togglegroup_command))
+
+    # Admin commands
+    app.add_handler(CommandHandler("invite", handlers.invite_command))
+    app.add_handler(CommandHandler("users", handlers.users_command))
+    app.add_handler(CommandHandler("kick", handlers.kick_command))
 
     # Start polling
     logger.info("🚀 EigenDigest Bot is starting...")
