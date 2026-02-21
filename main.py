@@ -1,6 +1,7 @@
 """EigenDigest Bot — main entry point (multi-user)."""
 
 import logging
+from pathlib import Path
 import sys
 
 from telegram import BotCommand, BotCommandScopeDefault, BotCommandScopeAllPrivateChats, MenuButtonCommands
@@ -11,13 +12,17 @@ from db import models
 from bot import handlers
 from bot.scheduler import setup_scheduler
 
+# Store logs next to the configured DB, which is writable in Docker (/data).
+log_path = Path(config.DB_PATH).parent / "eigendigest.log"
+log_path.parent.mkdir(parents=True, exist_ok=True)
+
 # Configure logging
 logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     level=logging.INFO,
     handlers=[
         logging.StreamHandler(sys.stdout),
-        logging.FileHandler("eigendigest.log", encoding="utf-8"),
+        logging.FileHandler(log_path, encoding="utf-8"),
     ],
 )
 logger = logging.getLogger(__name__)
