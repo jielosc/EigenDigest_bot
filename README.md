@@ -4,15 +4,7 @@
 
 ## 快速开始
 
-### 1. 安装依赖
-
-```bash
-conda create -n eigendigest python=3.11 -y
-conda activate eigendigest
-pip install -r requirements.txt
-```
-
-### 2. 配置环境变量
+### 配置环境变量
 
 ```bash
 cp .env.example .env
@@ -27,10 +19,28 @@ cp .env.example .env
 | `OPENAI_BASE_URL`    | API 地址                                                     |
 | `LLM_MODEL`          | 模型名称                                                     |
 
-### 3. 启动
+### Docker 部署（推荐）
 
 ```bash
+# 构建并启动
+docker compose up -d --build
+
+# 查看日志
+docker compose logs -f
+
+# 停止 / 重启
+docker compose down
+docker compose restart
+```
+
+数据库文件通过 Docker volume 持久化，容器重建不会丢失数据。
+
+### 本地运行
+
+```bash
+conda create -n eigendigest python=3.11 -y
 conda activate eigendigest
+pip install -r requirements.txt
 python main.py
 ```
 
@@ -101,5 +111,8 @@ EigenDigest_bot/
 │   └── presets.py         # 预设分组
 ├── config.py              # 配置
 ├── main.py                # 入口
-└── requirements.txt
+├── requirements.txt
+├── Dockerfile             # Docker 镜像构建
+├── docker-compose.yml     # Docker Compose 编排
+└── .dockerignore
 ```
