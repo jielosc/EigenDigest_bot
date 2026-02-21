@@ -1,0 +1,10 @@
+.git
+.gitignore
+.env
+.env.example
+*.db
+__pycache__
+*.pyc
+eigendigest.log
+.venv
+venv
