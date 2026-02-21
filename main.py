@@ -3,7 +3,7 @@
 import logging
 import sys
 
-from telegram import BotCommand
+from telegram import BotCommand, BotCommandScopeDefault, BotCommandScopeAllPrivateChats, MenuButtonCommands
 from telegram.ext import ApplicationBuilder, CallbackQueryHandler, CommandHandler
 
 import config
@@ -64,8 +64,19 @@ def main():
             BotCommand("users", "查看用户 (管理员)"),
             BotCommand("kick", "移除用户 (管理员)"),
         ]
-        await application.bot.set_my_commands(commands)
+        try:
+            await application.bot.delete_my_commands(scope=BotCommandScopeDefault())
+            await application.bot.delete_my_commands(scope=BotCommandScopeAllPrivateChats())
+        except Exception as e:
+            logger.warning(f"Could not delete old commands: {e}")
 
+        await application.bot.set_my_commands(commands, scope=BotCommandScopeDefault())
+        await application.bot.set_my_commands(commands, scope=BotCommandScopeAllPrivateChats())
+        
+        try:
+            await application.bot.set_chat_menu_button(menu_button=MenuButtonCommands())
+        except Exception as e:
+            logger.warning(f"Could not set menu button: {e}")
         logger.info("Scheduler and bot commands initialized.")
 
     # Build Telegram application
