@@ -3,7 +3,8 @@
 import logging
 import sys
 
-from telegram.ext import ApplicationBuilder, CommandHandler
+from telegram import BotCommand
+from telegram.ext import ApplicationBuilder, CallbackQueryHandler, CommandHandler
 
 import config
 from db import models
@@ -39,10 +40,33 @@ def main():
     models.init_db()
     logger.info("Database initialized.")
 
-    # post_init callback: start scheduler after event loop is running
+    # post_init callback: start scheduler + register command menu
     async def post_init(application):
         setup_scheduler(application)
-        logger.info("Scheduler initialized in post_init.")
+
+        # Register commands in Telegram's "/" menu
+        commands = [
+            BotCommand("start", "开始使用"),
+            BotCommand("help", "查看帮助"),
+            BotCommand("list", "查看信息源"),
+            BotCommand("add", "添加信息源"),
+            BotCommand("remove", "删除信息源"),
+            BotCommand("toggle", "启用/禁用信息源"),
+            BotCommand("groups", "查看分组"),
+            BotCommand("presets", "查看预设"),
+            BotCommand("import", "导入预设分组"),
+            BotCommand("delgroup", "删除整组"),
+            BotCommand("togglegroup", "启用/禁用整组"),
+            BotCommand("settime", "设置推送时间"),
+            BotCommand("digest", "立即生成摘要"),
+            BotCommand("join", "使用邀请码加入"),
+            BotCommand("invite", "生成邀请码 (管理员)"),
+            BotCommand("users", "查看用户 (管理员)"),
+            BotCommand("kick", "移除用户 (管理员)"),
+        ]
+        await application.bot.set_my_commands(commands)
+
+        logger.info("Scheduler and bot commands initialized.")
 
     # Build Telegram application
     app = (
@@ -58,7 +82,7 @@ def main():
 
     # User commands (authorized users)
     app.add_handler(CommandHandler("help", handlers.help_command))
-    app.add_handler(CommandHandler("add", handlers.add_command))
+    app.add_handler(handlers.get_add_handler())
     app.add_handler(CommandHandler("remove", handlers.remove_command))
     app.add_handler(CommandHandler("list", handlers.list_command))
     app.add_handler(CommandHandler("toggle", handlers.toggle_command))
@@ -76,6 +100,9 @@ def main():
     app.add_handler(CommandHandler("invite", handlers.invite_command))
     app.add_handler(CommandHandler("users", handlers.users_command))
     app.add_handler(CommandHandler("kick", handlers.kick_command))
+
+    # Inline button callbacks
+    app.add_handler(CallbackQueryHandler(handlers.callback_handler))
 
     # Start polling
     logger.info("🚀 EigenDigest Bot is starting...")
