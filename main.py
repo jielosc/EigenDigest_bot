@@ -27,6 +27,12 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+BOT_DESCRIPTION = (
+    "EigenDigest 是一个智能信息摘要机器人。\n\n"
+    "添加 RSS、网页和微信公众号信息源后，"
+    "我会每天按你设定的时间自动抓取内容并生成 AI 精华摘要。"
+)
+
 
 def main():
     """Initialize and run the bot."""
@@ -45,7 +51,7 @@ def main():
     models.init_db()
     logger.info("Database initialized.")
 
-    # post_init callback: start scheduler + register command menu
+    # post_init callback: start scheduler + register bot metadata/menu
     async def post_init(application):
         setup_scheduler(application)
 
@@ -77,6 +83,11 @@ def main():
 
         await application.bot.set_my_commands(commands, scope=BotCommandScopeDefault())
         await application.bot.set_my_commands(commands, scope=BotCommandScopeAllPrivateChats())
+
+        try:
+            await application.bot.set_my_description(BOT_DESCRIPTION)
+        except Exception as e:
+            logger.warning(f"Could not set bot description: {e}")
         
         try:
             await application.bot.set_chat_menu_button(menu_button=MenuButtonCommands())
