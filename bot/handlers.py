@@ -15,7 +15,13 @@ from telegram.ext import (
 
 import config
 from db import models
-from db.presets import PRESET_GROUPS, get_preset, get_preset_key, get_preset_names
+from db.presets import (
+    PRESET_GROUPS,
+    get_preset,
+    get_preset_key,
+    get_preset_names,
+    get_onboarding_preset_names,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -200,16 +206,25 @@ async def join_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     username = update.effective_user.username or update.effective_user.first_name or ""
     models.add_user(uid, username, "user")
 
-    # Import all presets as base sources for the new user
+    # Import core presets for the new user. More groups can be added via /presets.
     total_added = 0
     total_skipped = 0
-    for group_name, sources in PRESET_GROUPS.items():
+    onboarding_groups = get_onboarding_preset_names()
+    for group_name in onboarding_groups:
+        sources = PRESET_GROUPS[group_name]
         batch = [{**s, "group_name": group_name} for s in sources]
         added, skipped = models.add_sources_batch(uid, batch)
         total_added += added
         total_skipped += skipped
 
-    text, keyboard = build_main_menu(uid, f"🎉 **欢迎加入 EigenDigest！**\n\n已为你导入 **{total_added}** 个基础信息源。")
+    text, keyboard = build_main_menu(
+        uid,
+        (
+            "🎉 **欢迎加入 EigenDigest！**\n\n"
+            f"已为你导入 **{total_added}** 个核心信息源（{len(onboarding_groups)} 个分组）。\n"
+            "如需扩展主题，可用 `/presets` 一键导入更多分组。"
+        ),
+    )
     await update.message.reply_text(
         text,
         parse_mode="Markdown",
@@ -491,7 +506,7 @@ async def import_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    name = context.args[0]
+    name = " ".join(context.args).strip()
     preset_sources = get_preset(name)
     canonical_name = get_preset_key(name)
 
@@ -519,7 +534,7 @@ async def delgroup_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args:
         await update.message.reply_text("❌ 用法: `/delgroup <分组名>`", parse_mode="Markdown")
         return
-    group_name = context.args[0]
+    group_name = " ".join(context.args).strip()
     count = models.remove_group(uid, group_name)
     if count > 0:
         await update.message.reply_text(
@@ -536,7 +551,7 @@ async def togglegroup_command(update: Update, context: ContextTypes.DEFAULT_TYPE
     if not context.args:
         await update.message.reply_text("❌ 用法: `/togglegroup <分组名>`", parse_mode="Markdown")
         return
-    group_name = context.args[0]
+    group_name = " ".join(context.args).strip()
     new_state = models.toggle_group(uid, group_name)
     if new_state is None:
         await update.message.reply_text(f"❌ 未找到分组: **{group_name}**", parse_mode="Markdown")
