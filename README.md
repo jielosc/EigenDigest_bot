@@ -2,6 +2,11 @@
 
 多用户每日信息摘要 Telegram Bot — 从 RSS、网页、微信公众号拉取内容，通过 LLM 生成摘要。
 
+## 在线试用
+
+已部署体验版 Bot：[@EigenDigest_bot](https://t.me/EigenDigest_bot)  
+欢迎联系 [@ghoogloo](https://t.me/ghoogloo) 申请试用。
+
 ## 快速开始
 
 ### 配置环境变量
