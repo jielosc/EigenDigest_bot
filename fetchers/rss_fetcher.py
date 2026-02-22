@@ -1,5 +1,6 @@
 """RSS/Atom feed fetcher."""
 
+import asyncio
 import logging
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -17,7 +18,8 @@ class RSSFetcher(BaseFetcher):
     async def fetch(self, url: str, source_name: str = "") -> list[Article]:
         """Parse RSS feed and return recent articles (last 24h)."""
         try:
-            feed = feedparser.parse(url)
+            # feedparser.parse is blocking I/O; move it off the event loop.
+            feed = await asyncio.to_thread(feedparser.parse, url)
             if feed.bozo and not feed.entries:
                 logger.warning(f"Failed to parse RSS feed: {url} — {feed.bozo_exception}")
                 return []

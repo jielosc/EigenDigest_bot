@@ -5,7 +5,7 @@
 
 PRESET_GROUPS: dict[str, list[dict]] = {
     "科技": [
-        {"name": "HackerNews", "url": "https://hnrss.org/newest?count=20", "source_type": "rss"},
+        {"name": "HackerNews", "url": "https://news.ycombinator.com/rss", "source_type": "rss"},
         {"name": "TechCrunch", "url": "https://techcrunch.com/feed/", "source_type": "rss"},
         {"name": "TheVerge", "url": "https://www.theverge.com/rss/index.xml", "source_type": "rss"},
         {"name": "ArsTechnica", "url": "https://feeds.arstechnica.com/arstechnica/index", "source_type": "rss"},
@@ -21,12 +21,12 @@ PRESET_GROUPS: dict[str, list[dict]] = {
         {"name": "虎嗅", "url": "https://www.huxiu.com/rss/0.xml", "source_type": "rss"},
     ],
     "财经": [
-        {"name": "华尔街日报", "url": "https://feeds.a]@wsj.com/tag/rssfeeds/wsj/xml", "source_type": "rss"},
+        {"name": "华尔街日报", "url": "https://feeds.a.dj.com/rss/RSSWSJD.xml", "source_type": "rss"},
         {"name": "Bloomberg", "url": "https://feeds.bloomberg.com/markets/news.rss", "source_type": "rss"},
-        {"name": "Reuters", "url": "https://www.reutersagency.com/feed/", "source_type": "rss"},
+        {"name": "CNBC财经", "url": "https://www.cnbc.com/id/10000664/device/rss/rss.html", "source_type": "rss"},
     ],
     "设计": [
-        {"name": "Dribbble", "url": "https://dribbble.com/shots/popular.rss", "source_type": "rss"},
+        {"name": "Dribbble Stories", "url": "https://dribbble.com/stories.rss", "source_type": "rss"},
         {"name": "DesignMilk", "url": "https://design-milk.com/feed/", "source_type": "rss"},
     ],
     "开源": [

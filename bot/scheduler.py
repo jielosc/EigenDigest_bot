@@ -25,6 +25,7 @@ _web_fetcher = WebFetcher()
 _scheduler: AsyncIOScheduler | None = None
 
 DIGEST_JOB_ID = "daily_digest_check"
+MAX_CONCURRENT_DIGESTS = 5
 
 
 def _get_fetcher(source_type: str):
@@ -106,11 +107,19 @@ async def _scheduled_digest_check(app) -> None:
     current_time = f"{now.hour:02d}:{now.minute:02d}"
 
     user_ids = models.get_all_user_ids()
+    due_user_ids = [
+        uid
+        for uid in user_ids
+        if models.get_setting(uid, "digest_time", "08:00") == current_time
+    ]
+    if not due_user_ids:
+        return
 
-    for uid in user_ids:
-        user_time = models.get_setting(uid, "digest_time", "08:00")
-        if user_time == current_time:
-            logger.info(f"Scheduled digest triggered for user {uid} at {current_time}")
+    logger.info(f"Scheduled digest triggered for {len(due_user_ids)} user(s) at {current_time}")
+    semaphore = asyncio.Semaphore(MAX_CONCURRENT_DIGESTS)
+
+    async def run_for_due_user(uid: int) -> None:
+        async with semaphore:
             try:
                 summary = await run_digest_for_user(uid)
                 if summary:
@@ -120,6 +129,8 @@ async def _scheduled_digest_check(app) -> None:
                     logger.info(f"No digest content for user {uid}")
             except Exception as e:
                 logger.error(f"Digest failed for user {uid}: {e}")
+
+    await asyncio.gather(*(run_for_due_user(uid) for uid in due_user_ids))
 
 
 def setup_scheduler(app) -> AsyncIOScheduler:

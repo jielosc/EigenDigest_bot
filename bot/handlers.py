@@ -102,10 +102,10 @@ def build_groups_ui(uid: int):
     for g in groups:
         status = "✅" if g['enabled_count'] > 0 else "⏸️"
         gname = g['group_name']
-        cutoff = gname.encode('utf-8')[:40].decode('utf-8', 'ignore')
+        group_ref_id = g["group_ref_id"]
         buttons.append([
-            InlineKeyboardButton(f"{status} {gname} ({g['enabled_count']}/{g['count']})", callback_data=f"tglgrp_{cutoff}"),
-            InlineKeyboardButton("🗑️", callback_data=f"delgrp_{cutoff}")
+            InlineKeyboardButton(f"{status} {gname} ({g['enabled_count']}/{g['count']})", callback_data=f"tglgrp_{group_ref_id}"),
+            InlineKeyboardButton("🗑️", callback_data=f"delgrp_{group_ref_id}")
         ])
         
     buttons.append([InlineKeyboardButton("🔙 返回菜单", callback_data="cmd_menu")])
@@ -149,9 +149,6 @@ def _uid(update: Update) -> int:
 # ─── Public Commands (no auth required) ──────────────────────
 
 
-async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle /start — different message for authorized vs unauthed users."""
-    uid = _uid(update)
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /start — different message for authorized vs unauthed users."""
     uid = _uid(update)
@@ -737,31 +734,41 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         group_name = data[7:]  # Remove "import_" prefix
         await _cb_import(query, uid, group_name)
     elif data.startswith("tglsrc_"):
-        sid = int(data.split('_')[1])
-        sources = models.list_sources(uid)
-        src = next((s for s in sources if s['id'] == sid), None)
-        if src:
-            models.toggle_source(uid, src['name'])
+        try:
+            sid = int(data.split('_')[1])
+        except (ValueError, IndexError):
+            return
+        changed = models.toggle_source_by_id(uid, sid)
+        if changed is not None:
             text, keyboard = build_list_ui(uid)
             await query.edit_message_text(text, parse_mode="Markdown", reply_markup=keyboard)
     elif data.startswith("delsrc_"):
-        sid = int(data.split('_')[1])
-        sources = models.list_sources(uid)
-        src = next((s for s in sources if s['id'] == sid), None)
-        if src:
-            models.remove_source(uid, src['name'])
+        try:
+            sid = int(data.split('_')[1])
+        except (ValueError, IndexError):
+            return
+        removed = models.remove_source_by_id(uid, sid)
+        if removed:
             text, keyboard = build_list_ui(uid)
             await query.edit_message_text(text, parse_mode="Markdown", reply_markup=keyboard)
     elif data.startswith("tglgrp_"):
-        gname = data.split('_', 1)[1]
-        models.toggle_group(uid, gname)
-        text, keyboard = build_groups_ui(uid)
-        await query.edit_message_text(text, parse_mode="Markdown", reply_markup=keyboard)
+        try:
+            group_ref_id = int(data.split('_', 1)[1])
+        except (ValueError, IndexError):
+            return
+        changed = models.toggle_group_by_ref_id(uid, group_ref_id)
+        if changed is not None:
+            text, keyboard = build_groups_ui(uid)
+            await query.edit_message_text(text, parse_mode="Markdown", reply_markup=keyboard)
     elif data.startswith("delgrp_"):
-        gname = data.split('_', 1)[1]
-        models.remove_group(uid, gname)
-        text, keyboard = build_groups_ui(uid)
-        await query.edit_message_text(text, parse_mode="Markdown", reply_markup=keyboard)
+        try:
+            group_ref_id = int(data.split('_', 1)[1])
+        except (ValueError, IndexError):
+            return
+        removed = models.remove_group_by_ref_id(uid, group_ref_id)
+        if removed > 0:
+            text, keyboard = build_groups_ui(uid)
+            await query.edit_message_text(text, parse_mode="Markdown", reply_markup=keyboard)
 
 
 async def _cb_presets(query):

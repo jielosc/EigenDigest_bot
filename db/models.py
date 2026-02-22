@@ -241,11 +241,31 @@ def add_sources_batch(user_id: int, sources: list[dict]) -> tuple[int, int]:
 
 
 def remove_source(user_id: int, name: str) -> bool:
-    """Remove a source by name for a user."""
+    """Remove one source by name for a user (oldest match)."""
     conn = _get_conn()
     try:
         cursor = conn.execute(
-            "DELETE FROM sources WHERE user_id = ? AND name = ?", (user_id, name)
+            "DELETE FROM sources "
+            "WHERE id = ("
+            "  SELECT id FROM sources "
+            "  WHERE user_id = ? AND name = ? "
+            "  ORDER BY id LIMIT 1"
+            ")",
+            (user_id, name),
+        )
+        conn.commit()
+        return cursor.rowcount > 0
+    finally:
+        conn.close()
+
+
+def remove_source_by_id(user_id: int, source_id: int) -> bool:
+    """Remove a source by ID for a user."""
+    conn = _get_conn()
+    try:
+        cursor = conn.execute(
+            "DELETE FROM sources WHERE user_id = ? AND id = ?",
+            (user_id, source_id),
         )
         conn.commit()
         return cursor.rowcount > 0
@@ -286,7 +306,7 @@ def list_groups(user_id: int) -> list[dict]:
     conn = _get_conn()
     try:
         rows = conn.execute(
-            "SELECT group_name, COUNT(*) as count, "
+            "SELECT group_name, MIN(id) as group_ref_id, COUNT(*) as count, "
             "SUM(CASE WHEN enabled = 1 THEN 1 ELSE 0 END) as enabled_count "
             "FROM sources WHERE user_id = ? GROUP BY group_name ORDER BY group_name",
             (user_id,),
@@ -315,8 +335,28 @@ def toggle_source(user_id: int, name: str) -> Optional[bool]:
     conn = _get_conn()
     try:
         row = conn.execute(
-            "SELECT id, enabled FROM sources WHERE user_id = ? AND name = ?",
+            "SELECT id, enabled FROM sources "
+            "WHERE user_id = ? AND name = ? "
+            "ORDER BY id LIMIT 1",
             (user_id, name),
+        ).fetchone()
+        if not row:
+            return None
+        new_state = not row["enabled"]
+        conn.execute("UPDATE sources SET enabled = ? WHERE id = ?", (new_state, row["id"]))
+        conn.commit()
+        return new_state
+    finally:
+        conn.close()
+
+
+def toggle_source_by_id(user_id: int, source_id: int) -> Optional[bool]:
+    """Toggle a source by ID for a user. Returns new state or None."""
+    conn = _get_conn()
+    try:
+        row = conn.execute(
+            "SELECT id, enabled FROM sources WHERE user_id = ? AND id = ?",
+            (user_id, source_id),
         ).fetchone()
         if not row:
             return None
@@ -346,6 +386,55 @@ def toggle_group(user_id: int, group_name: str) -> Optional[bool]:
         )
         conn.commit()
         return new_state
+    finally:
+        conn.close()
+
+
+def toggle_group_by_ref_id(user_id: int, source_id: int) -> Optional[bool]:
+    """Toggle a group using any source ID in that group. Returns new state or None."""
+    conn = _get_conn()
+    try:
+        row = conn.execute(
+            "SELECT group_name FROM sources WHERE user_id = ? AND id = ?",
+            (user_id, source_id),
+        ).fetchone()
+        if not row:
+            return None
+        group_name = row["group_name"]
+        rows = conn.execute(
+            "SELECT enabled FROM sources WHERE user_id = ? AND group_name = ?",
+            (user_id, group_name),
+        ).fetchall()
+        if not rows:
+            return None
+        any_enabled = any(r["enabled"] for r in rows)
+        new_state = not any_enabled
+        conn.execute(
+            "UPDATE sources SET enabled = ? WHERE user_id = ? AND group_name = ?",
+            (new_state, user_id, group_name),
+        )
+        conn.commit()
+        return new_state
+    finally:
+        conn.close()
+
+
+def remove_group_by_ref_id(user_id: int, source_id: int) -> int:
+    """Remove a group using any source ID in that group. Returns removed count."""
+    conn = _get_conn()
+    try:
+        row = conn.execute(
+            "SELECT group_name FROM sources WHERE user_id = ? AND id = ?",
+            (user_id, source_id),
+        ).fetchone()
+        if not row:
+            return 0
+        cursor = conn.execute(
+            "DELETE FROM sources WHERE user_id = ? AND group_name = ?",
+            (user_id, row["group_name"]),
+        )
+        conn.commit()
+        return cursor.rowcount
     finally:
         conn.close()
 
