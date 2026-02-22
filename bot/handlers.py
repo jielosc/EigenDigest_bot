@@ -152,6 +152,22 @@ def _uid(update: Update) -> int:
     return update.effective_user.id
 
 
+def _import_onboarding_sources(user_id: int) -> tuple[int, int, list[str]]:
+    """Import onboarding preset groups for a user."""
+    total_added = 0
+    total_skipped = 0
+    onboarding_groups = get_onboarding_preset_names()
+
+    for group_name in onboarding_groups:
+        sources = PRESET_GROUPS[group_name]
+        batch = [{**s, "group_name": group_name} for s in sources]
+        added, skipped = models.add_sources_batch(user_id, batch)
+        total_added += added
+        total_skipped += skipped
+
+    return total_added, total_skipped, onboarding_groups
+
+
 # ─── Public Commands (no auth required) ──────────────────────
 
 
@@ -207,15 +223,7 @@ async def join_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     models.add_user(uid, username, "user")
 
     # Import core presets for the new user. More groups can be added via /presets.
-    total_added = 0
-    total_skipped = 0
-    onboarding_groups = get_onboarding_preset_names()
-    for group_name in onboarding_groups:
-        sources = PRESET_GROUPS[group_name]
-        batch = [{**s, "group_name": group_name} for s in sources]
-        added, skipped = models.add_sources_batch(uid, batch)
-        total_added += added
-        total_skipped += skipped
+    total_added, _, onboarding_groups = _import_onboarding_sources(uid)
 
     text, keyboard = build_main_menu(
         uid,
@@ -247,6 +255,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE, from_
         admin_section = (
             "\n**🔑 管理员命令：**\n"
             "`/invite` — 生成邀请码\n"
+            "`/adduser <user_id> [用户名]` — 直接添加用户\n"
             "`/users` — 查看所有用户\n"
             "`/kick <user_id>` — 移除用户\n"
         )
@@ -655,6 +664,52 @@ async def users_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"   📡 {u['source_count']} 个源"
         )
     await update.message.reply_text("\n".join(lines), parse_mode="Markdown")
+
+
+@admin_only
+async def adduser_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /adduser <user_id> [username] — add user directly by Telegram user_id."""
+    if not context.args:
+        await update.message.reply_text(
+            "❌ 用法: `/adduser <user_id> [用户名]`",
+            parse_mode="Markdown",
+        )
+        return
+
+    try:
+        target_id = int(context.args[0])
+    except ValueError:
+        await update.message.reply_text("❌ user_id 必须是数字")
+        return
+
+    if target_id <= 0:
+        await update.message.reply_text("❌ user_id 必须是正整数")
+        return
+
+    existing = models.get_user(target_id)
+    if existing:
+        role_text = "管理员" if existing["role"] == "admin" else "普通用户"
+        await update.message.reply_text(
+            f"ℹ️ 用户 `{target_id}` 已存在（{role_text}）。",
+            parse_mode="Markdown",
+        )
+        return
+
+    username = " ".join(context.args[1:]).strip() if len(context.args) > 1 else ""
+    models.add_user(target_id, username, "user")
+    total_added, total_skipped, onboarding_groups = _import_onboarding_sources(target_id)
+
+    msg_lines = [
+        "✅ **用户添加成功**",
+        f"🆔 user_id: `{target_id}`",
+        f"📦 已导入核心预设: **{total_added}** 条（{len(onboarding_groups)} 个分组）",
+    ]
+    if username:
+        msg_lines.insert(2, f"👤 用户名: **{username}**")
+    if total_skipped:
+        msg_lines.append(f"⏭️ 跳过重复: {total_skipped}")
+    msg_lines.append("用户现在可直接使用 `/start` 和其他命令。")
+    await update.message.reply_text("\n".join(msg_lines), parse_mode="Markdown")
 
 
 @admin_only

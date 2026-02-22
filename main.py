@@ -72,6 +72,7 @@ def main():
             BotCommand("digest", "立即生成摘要"),
             BotCommand("join", "使用邀请码加入"),
             BotCommand("invite", "生成邀请码 (管理员)"),
+            BotCommand("adduser", "按ID添加用户 (管理员)"),
             BotCommand("users", "查看用户 (管理员)"),
             BotCommand("kick", "移除用户 (管理员)"),
         ]
@@ -125,6 +126,7 @@ def main():
 
     # Admin commands
     app.add_handler(CommandHandler("invite", handlers.invite_command))
+    app.add_handler(CommandHandler("adduser", handlers.adduser_command))
     app.add_handler(CommandHandler("users", handlers.users_command))
     app.add_handler(CommandHandler("kick", handlers.kick_command))
 
