@@ -5,7 +5,7 @@ from pathlib import Path
 import sys
 
 from telegram import BotCommand, BotCommandScopeDefault, BotCommandScopeAllPrivateChats, MenuButtonCommands
-from telegram.ext import ApplicationBuilder, CallbackQueryHandler, CommandHandler
+from telegram.ext import ApplicationBuilder, CallbackQueryHandler, CommandHandler, MessageHandler, filters
 
 import config
 from db import models
@@ -58,7 +58,7 @@ def main():
         # Register commands in Telegram's "/" menu
         commands = [
             BotCommand("start", "开始使用"),
-            BotCommand("help", "查看帮助"),
+            BotCommand("help", "查看命令帮助"),
             BotCommand("list", "查看信息源"),
             BotCommand("add", "添加信息源"),
             BotCommand("remove", "删除信息源"),
@@ -73,6 +73,7 @@ def main():
             BotCommand("join", "使用邀请码加入"),
             BotCommand("invite", "生成邀请码 (管理员)"),
             BotCommand("adduser", "按ID添加用户 (管理员)"),
+            BotCommand("admin", "管理员面板"),
             BotCommand("users", "查看用户 (管理员)"),
             BotCommand("kick", "移除用户 (管理员)"),
         ]
@@ -125,10 +126,14 @@ def main():
     app.add_handler(CommandHandler("togglegroup", handlers.togglegroup_command))
 
     # Admin commands
+    app.add_handler(CommandHandler("admin", handlers.admin_panel_command))
     app.add_handler(CommandHandler("invite", handlers.invite_command))
     app.add_handler(CommandHandler("adduser", handlers.adduser_command))
     app.add_handler(CommandHandler("users", handlers.users_command))
     app.add_handler(CommandHandler("kick", handlers.kick_command))
+
+    # Button-guided text input (custom time + admin adduser/kick)
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handlers.admin_text_input_handler))
 
     # Inline button callbacks
     app.add_handler(CallbackQueryHandler(handlers.callback_handler))
