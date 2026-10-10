@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="740" viewBox="0 0 1440 740" role="img" aria-labelledby="title desc">
+<title id="title">EigenDigest 系统架构与信息处理流程</title>
+<desc id="desc">调度与手动请求读取用户配置，经过 RSS 或网页采集、文本处理与模型摘要，最终向 Telegram 用户推送简报。SQLite 提供用户、订阅和时间配置。</desc>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="#526174"/></marker></defs>
+<rect width="1440" height="740" rx="16" fill="#ffffff"/>
+<style>text{font-family:Arial,"Noto Sans CJK SC","PingFang SC","Microsoft YaHei",sans-serif;fill:#233044}.title{font-size:27px;font-weight:700}.subtitle{font-size:14px;fill:#6b7788}.section{font-size:17px;font-weight:700}.label{font-size:17px;font-weight:600}.note{font-size:14px;fill:#596779}.small{font-size:13px;fill:#6b7788}.edge{fill:none;stroke:#526174;stroke-width:1.7;marker-end:url(#arrow)}.control{fill:none;stroke:#8795a7;stroke-width:1.5;stroke-dasharray:6 5;marker-end:url(#arrow)}</style>
+<text x="48" y="52" class="title">EigenDigest · 个性化信息摘要架构</text>
+<text x="48" y="80" class="subtitle">SYSTEM OVERVIEW    /    Multi-source collection → LLM summarization → Personal delivery</text>
+
+<rect x="48" y="110" width="440" height="86" rx="6" fill="#f8fafc" stroke="#c9d2df" stroke-width="1.2"/>
+<text x="268.0" y="141" class="label" text-anchor="middle">触发机制</text>
+<text x="268.0" y="167" class="note" text-anchor="middle">每日调度（每分钟检查）  /  用户手动生成</text>
+<rect x="550" y="110" width="842" height="86" rx="6" fill="#f8fafc" stroke="#c9d2df" stroke-width="1.2"/>
+<text x="971.0" y="141" class="label" text-anchor="middle">SQLite · 用户配置</text>
+<text x="971.0" y="167" class="note" text-anchor="middle">用户授权  ·  已启用订阅  ·  信息源分组  ·  每日推送时间</text>
+
+<text x="719" y="220" class="small" text-anchor="middle">配置读取与任务触发</text>
+<rect x="48" y="248" width="304" height="356" rx="9" fill="#f3f6fa" stroke="#a8b9ce" stroke-width="1.2"/>
+<text x="70" y="278" class="small" text-anchor="start">01</text>
+<text x="70" y="307" class="section" text-anchor="start">内容采集</text>
+<text x="70" y="330" class="small" text-anchor="start">SOURCE ACQUISITION</text>
+<rect x="384" y="248" width="304" height="356" rx="9" fill="#f1f7f6" stroke="#9fbcb5" stroke-width="1.2"/>
+<text x="406" y="278" class="small" text-anchor="start">02</text>
+<text x="406" y="307" class="section" text-anchor="start">文本处理</text>
+<text x="406" y="330" class="small" text-anchor="start">CONTENT PROCESSING</text>
+<rect x="720" y="248" width="304" height="356" rx="9" fill="#f5f3f8" stroke="#b8adca" stroke-width="1.2"/>
+<text x="742" y="278" class="small" text-anchor="start">03</text>
+<text x="742" y="307" class="section" text-anchor="start">模型摘要</text>
+<text x="742" y="330" class="small" text-anchor="start">LLM SUMMARIZATION</text>
+<rect x="1056" y="248" width="336" height="356" rx="9" fill="#faf6ef" stroke="#cbb997" stroke-width="1.2"/>
+<text x="1078" y="278" class="small" text-anchor="start">04</text>
+<text x="1078" y="307" class="section" text-anchor="start">消息交付</text>
+<text x="1078" y="330" class="small" text-anchor="start">DIGEST DELIVERY</text>
+<rect x="68" y="353" width="264" height="96" rx="6" fill="#ffffff" stroke="#c9d2df" stroke-width="1.2"/>
+<text x="200.0" y="384" class="label" text-anchor="middle">RSS / Atom</text>
+<text x="200.0" y="410" class="note" text-anchor="middle">解析订阅条目</text>
+<text x="200.0" y="432" class="note" text-anchor="middle">公众号通过外部 RSS 接入</text>
+<rect x="68" y="477" width="264" height="96" rx="6" fill="#ffffff" stroke="#c9d2df" stroke-width="1.2"/>
+<text x="200.0" y="508" class="label" text-anchor="middle">静态网页</text>
+<text x="200.0" y="534" class="note" text-anchor="middle">HTTP 获取 HTML</text>
+<text x="200.0" y="556" class="note" text-anchor="middle">提取页面正文</text>
+<rect x="404" y="353" width="264" height="96" rx="6" fill="#ffffff" stroke="#c9d2df" stroke-width="1.2"/>
+<text x="536.0" y="384" class="label" text-anchor="middle">时间过滤与清理</text>
+<text x="536.0" y="410" class="note" text-anchor="middle">RSS：最近 24 小时¹</text>
+<text x="536.0" y="432" class="note" text-anchor="middle">网页：移除页面噪声</text>
+<rect x="404" y="477" width="264" height="96" rx="6" fill="#ffffff" stroke="#c9d2df" stroke-width="1.2"/>
+<text x="536.0" y="508" class="label" text-anchor="middle">按信息源汇总</text>
+<text x="536.0" y="534" class="note" text-anchor="middle">保留标题与正文</text>
+<text x="536.0" y="556" class="note" text-anchor="middle">限制单篇与总输入长度</text>
+<rect x="740" y="353" width="264" height="96" rx="6" fill="#ffffff" stroke="#c9d2df" stroke-width="1.2"/>
+<text x="872.0" y="384" class="label" text-anchor="middle">提示词 + 聚合文本</text>
+<text x="872.0" y="410" class="note" text-anchor="middle">统一中文输出</text>
+<text x="872.0" y="432" class="note" text-anchor="middle">按信息源组织关键要点</text>
+<rect x="740" y="477" width="264" height="96" rx="6" fill="#ffffff" stroke="#c9d2df" stroke-width="1.2"/>
+<text x="872.0" y="508" class="label" text-anchor="middle">Chat Completions</text>
+<text x="872.0" y="534" class="note" text-anchor="middle">调用所配置的模型</text>
+<text x="872.0" y="556" class="note" text-anchor="middle">生成简报与今日一句话</text>
+<rect x="1076" y="353" width="296" height="96" rx="6" fill="#ffffff" stroke="#c9d2df" stroke-width="1.2"/>
+<text x="1224.0" y="384" class="label" text-anchor="middle">摘要消息格式化</text>
+<text x="1224.0" y="410" class="note" text-anchor="middle">Markdown 文本</text>
+<text x="1224.0" y="432" class="note" text-anchor="middle">长摘要按 4,000 字符分段</text>
+<rect x="1076" y="477" width="296" height="96" rx="6" fill="#ffffff" stroke="#c9d2df" stroke-width="1.2"/>
+<text x="1224.0" y="508" class="label" text-anchor="middle">Telegram 私聊</text>
+<text x="1224.0" y="534" class="note" text-anchor="middle">每日按用户设定时间推送</text>
+<text x="1224.0" y="556" class="note" text-anchor="middle">支持随时手动生成</text>
+<path d="M332 401 H404" class="edge"/>
+<path d="M332 525 H366 V425 H404" class="edge"/>
+<path d="M536 449 V477" class="edge"/>
+<path d="M668 525 H699 V401 H740" class="edge"/>
+<path d="M872 449 V477" class="edge"/>
+<path d="M1004 525 H1035 V401 H1076" class="edge"/>
+<path d="M1224 449 V477" class="edge"/>
+<path d="M268 196 V230 H200 V248" class="control"/>
+<path d="M971 196 V230 H536 V248" class="control"/>
+<line x1="48" y1="636" x2="1392" y2="636" stroke="#dfe5ed"/>
+<path d="M48 665 H90" class="edge"/>
+<text x="104" y="670" class="small" text-anchor="start">内容流</text>
+<path d="M205 665 H247" class="control"/>
+<text x="261" y="670" class="small" text-anchor="start">配置 / 控制流</text>
+<text x="450" y="670" class="small" text-anchor="start">¹ RSS 最多检查前 20 条；无日期条目保留。</text>
+<text x="48" y="710" class="note" text-anchor="start">图 1.  手动请求与定时任务共用摘要流水线；无可用内容时不生成简报，单个来源抓取失败不影响其他来源。</text>
+</svg>
